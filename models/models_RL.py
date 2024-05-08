@@ -73,6 +73,7 @@ class StockPortfolioEnv(gym.Env):
                 state_space,
                 action_space,
                 tech_indicator_list,
+                timestamp,
                 turbulence_threshold=None,
                 lookback=12,
                 day = 0):
@@ -89,6 +90,7 @@ class StockPortfolioEnv(gym.Env):
         self.state_space = state_space
         self.action_space = action_space
         self.tech_indicator_list = tech_indicator_list
+        self.timestamp = timestamp
 
         # action_space normalization and shape is self.stock_dim
         self.action_space = spaces.Box(low = 0, high = 1,shape = (self.action_space,))
@@ -119,11 +121,11 @@ class StockPortfolioEnv(gym.Env):
             df = pd.DataFrame(self.portfolio_return_memory)
             df.columns = ['monthly_return']
             plt.plot(df.monthly_return.cumsum(),'r')
-            plt.savefig(f"../data/RL/results/cumulative_reward.png")
+            plt.savefig(f"../data/RL/results/cumulative_reward_{self.timestamp}.png")
             plt.close()
 
             plt.plot(self.portfolio_return_memory,'r')
-            plt.savefig(f"../data/RL/results/rewards.png")
+            plt.savefig(f"../data/RL/results/rewards_{self.timestamp}.png")
             plt.close()
 
             print("=================================")
@@ -323,7 +325,8 @@ def main():
                 "stock_dim": stock_dimension,
                 "tech_indicator_list": rl_train.columns[3:-2],
                 "action_space": stock_dimension,
-                "reward_scaling": 1e-4
+                "reward_scaling": 1e-4,
+                "timestamp": timestamp
     }
 
     e_train_gym = StockPortfolioEnv(df = rl_train, **env_kwargs)
@@ -365,14 +368,14 @@ def main():
                                       input_shape=None,
                                       param_grid=None,
                                       wts=df_actions)
-    rl_metrics, rl_rets = portfolio.perform_backtest(test_prices)
+    rl_metrics, rl_rets = portfolio.perform_backtest(test_prices, initial_amount)
 
     # save metrics and returns to disk
     rl_metrics.to_csv(f'../data/RL/results/RL_metrics_test_{timestamp}.csv')
     rl_rets.to_csv(f'../data/RL/results/RL_rets_test_{timestamp}.csv')
 
     # plot and save wealth index
-    plot_wealth_index(rl_rets, timestamp, initial_amount, 'RL_test')
+    plot_wealth_index(rl_rets, initial_amount, timestamp, 'RL_test')
 
 
 

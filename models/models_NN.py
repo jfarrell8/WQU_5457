@@ -160,7 +160,7 @@ class PortfolioModelTrainer:
 
         # return bench_wts
     
-    def perform_backtest(self, price_data, initial_amount, timestamp, model_version):
+    def perform_backtest(self, price_data, initial_amount):
 
 
         ind_rets = price_data.pct_change().dropna()
@@ -289,7 +289,7 @@ def main():
                 date_index = test_date_index
                 prices = test_prices
             pred_wts = portfolio.evaluate(df, date_index, ticker_list)
-            metrics, rets = portfolio.perform_backtest(prices, initial_amount, timestamp, model_version)
+            metrics, rets = portfolio.perform_backtest(prices, initial_amount)
 
             if model_version == 'train':
                 train_metrics = pd.concat([train_metrics, metrics], axis=1)
@@ -298,7 +298,7 @@ def main():
                 test_metrics = pd.concat([test_metrics, metrics], axis=1)
                 test_rets = pd.concat([test_rets, rets], axis=1)   
 
-            portfolio.save_model(timestamp, model_version)             
+            portfolio.save_model(timestamp, model_version)            
             
 
         print(f'Done training {model_type}!!!\n\n\n')
@@ -324,7 +324,7 @@ def main():
                                             param_grid=None)
         # ew train performance
         ew_portfolio.build_benchmark(date_index, ticker_list)
-        ew_metrics, ew_rets = ew_portfolio.perform_backtest(prices, initial_amount, timestamp, model_version)
+        ew_metrics, ew_rets = ew_portfolio.perform_backtest(prices, initial_amount)
 
         metrics = pd.concat([metrics, ew_metrics], axis=1)
         rets = pd.concat([rets, ew_rets], axis=1)
