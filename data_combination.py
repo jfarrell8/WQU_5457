@@ -58,7 +58,9 @@ def main():
     df = dataset.set_index(['Date', 'Ticker'])
     df_pivot = df.pivot_table(index='Date', columns='Ticker')
     df_pivot.columns = ['_'.join(col) for col in df_pivot.columns]
-
+    
+    # send needed datasets to disk
+    dataset.to_csv('data/rl_dataset.csv')
     df_pivot.to_csv('data/final_dataset.csv')
 
     print('\n\nDataset is ready for training!\n')

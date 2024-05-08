@@ -1,5 +1,9 @@
 import configparser
 import os
+import numpy as np
+import random
+import tensorflow as tf
+import matplotlib.pyplot as plt
 
 
 def load_config():
@@ -22,3 +26,21 @@ def set_seeds(seed_state):
     np.random.seed(seed_state)
     random.seed(seed_state)
     tf.random.set_seed(seed_state)
+
+
+
+def plot_wealth_index(p_rets_df, timestamp, initial_amount, model_version):
+    
+    wealth_index = initial_amount*(1+p_rets_df).cumprod()
+
+    plt.figure(figsize=(10, 6))
+    for column in wealth_index.columns:
+        plt.plot(wealth_index.index, wealth_index[column], label=column)
+
+    plt.xlabel('Date')
+    plt.ylabel('Wealth Index')
+    plt.title('Wealth Index Over Time')
+    plt.legend()
+    plt.grid(True)
+
+    plt.savefig(f'../data/model_data/wealth_index_{model_version}_{timestamp}.png')
