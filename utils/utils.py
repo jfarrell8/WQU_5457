@@ -29,9 +29,9 @@ def set_seeds(seed_state):
 
 
 
-def plot_wealth_index(p_rets_df, timestamp, initial_amount, model_version):
-    
-    wealth_index = initial_amount*(1+p_rets_df).cumprod()
+def plot_wealth_index(portfolio_returns, initial_amount, timestamp, model_version):
+    cumulative_rets = (1 + portfolio_returns).cumprod()
+    wealth_index = initial_amount * cumulative_rets
 
     plt.figure(figsize=(10, 6))
     for column in wealth_index.columns:

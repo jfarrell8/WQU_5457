@@ -160,25 +160,23 @@ class PortfolioModelTrainer:
 
         # return bench_wts
     
-    def perform_backtest(self, price_data):
-
-        # portfolio value over time
-        portfolio_value = (price_data * self.wts).sum(axis=1)
-
-        # monthly portfolio returns
-        portfolio_returns = portfolio_value.pct_change()
-        p_rets = pd.DataFrame({self.model_type:portfolio_returns})
+    def perform_backtest(self, price_data, initial_amount, timestamp, model_version):
 
 
-        # total return, annualized return, Sharpe ratio, Volatility, Max Drawdown
-        totalReturn = portfolio_value[-1] / portfolio_value[0] - 1
-        years = len(portfolio_value) / 12
-        annualReturn = ((portfolio_value[-1] / portfolio_value[0]) ** (1 / years)) - 1
-        monthly_returns = portfolio_value.pct_change()
-        sharpeRatio = (monthly_returns.mean() / monthly_returns.std()) * np.sqrt(12)
-        volatility = monthly_returns.std() * np.sqrt(12)
-        cumulative_returns = (1 + monthly_returns).cumprod()
-        maxDrawdown = (cumulative_returns / cumulative_returns.cummax() - 1).min()
+        ind_rets = price_data.pct_change().dropna()
+        portfolio_returns = (ind_rets * self.wts.iloc[1:,:]).sum(axis=1)
+        p_rets = pd.DataFrame({self.model_type: portfolio_returns})
+
+        cumulative_rets = (1 + portfolio_returns).cumprod()
+        wealth_index = initial_amount * cumulative_rets
+        
+        sharpeRatio = (portfolio_returns.mean() / portfolio_returns.std()) * np.sqrt(12)
+        totalReturn = wealth_index[-1] / wealth_index[0] - 1
+        years = len(portfolio_returns) / 12
+        annualReturn = (wealth_index[-1]/wealth_index[0])**(1 / years) - 1
+        volatility = portfolio_returns.std() * np.sqrt(12)
+        maxDrawdown = (cumulative_rets / cumulative_rets.cummax() - 1).min()
+
 
         p_metrics = pd.DataFrame({f'{self.model_type}':[totalReturn, annualReturn, sharpeRatio, volatility, maxDrawdown]})
         p_metrics.index = ['totalReturn', 'annualReturn', 'sharpeRatio', 'volatility', 'maxDrawdown']
@@ -234,8 +232,6 @@ def main():
     train_prices = price_data[price_data.index.isin(trainval_date_index)]
     train_prices = train_prices.sort_index()
 
-    # price_data = price_data[price_data.index.isin(test_date_index)]
-    # price_data = price_data.sort_index()
 
     # need to scale our full dataset for training
     df_pivot.reset_index(inplace=True, drop=True)
@@ -283,31 +279,27 @@ def main():
         # train optimal
         portfolio.train_optimal(df_trainval, batch)
 
-        # let's see how it performs in-sample
-        train_wts = portfolio.evaluate(df_trainval, trainval_date_index, ticker_list)
+        for model_version in ['train', 'test']:
+            if model_version == 'train':
+                df = df_trainval
+                date_index = trainval_date_index
+                prices = train_prices
+            elif model_version == 'test':
+                df = df_test
+                date_index = test_date_index
+                prices = test_prices
+            pred_wts = portfolio.evaluate(df, date_index, ticker_list)
+            metrics, rets = portfolio.perform_backtest(prices, initial_amount, timestamp, model_version)
 
-        # perform in-sample backtest
-        p_train_metrics, p_train_rets = portfolio.perform_backtest(train_prices)
+            if model_version == 'train':
+                train_metrics = pd.concat([train_metrics, metrics], axis=1)
+                train_rets = pd.concat([train_rets, rets], axis=1)
+            elif model_version == 'test':
+                test_metrics = pd.concat([test_metrics, metrics], axis=1)
+                test_rets = pd.concat([test_rets, rets], axis=1)   
 
-        # add to total_metrics and total_rets for later analysis
-        train_metrics = pd.concat([train_metrics, p_train_metrics], axis=1)
-        train_rets = pd.concat([train_rets, p_train_rets], axis=1)
-
-        # save train preds
-        portfolio.save_model(timestamp, 'train')
-
-        # predict out-of-sample performance on test dataset
-        test_wts = portfolio.evaluate(df_test, test_date_index, ticker_list)
-
-        # save model and test preds
-        portfolio.save_model(timestamp, 'test')
-
-        # perform backtest on out-of-sample test predictions
-        p_test_metrics, p_test_rets = portfolio.perform_backtest(test_prices)
-
-        # add to total_metrics and total_rets for later analysis
-        test_metrics = pd.concat([test_metrics, p_test_metrics], axis=1)
-        test_rets = pd.concat([test_rets, p_test_rets], axis=1)
+            portfolio.save_model(timestamp, model_version)             
+            
 
         print(f'Done training {model_type}!!!\n\n\n')
 
@@ -332,7 +324,7 @@ def main():
                                             param_grid=None)
         # ew train performance
         ew_portfolio.build_benchmark(date_index, ticker_list)
-        ew_metrics, ew_rets = ew_portfolio.perform_backtest(prices)
+        ew_metrics, ew_rets = ew_portfolio.perform_backtest(prices, initial_amount, timestamp, model_version)
 
         metrics = pd.concat([metrics, ew_metrics], axis=1)
         rets = pd.concat([rets, ew_rets], axis=1)
@@ -342,7 +334,7 @@ def main():
         rets.to_csv(f'../data/model_data/{model_version}_rets_{timestamp}.csv')
 
         # plot and save wealth index
-        plot_wealth_index(rets, timestamp, initial_amount, model_version)
+        plot_wealth_index(rets, initial_amount, timestamp, 'NN_' + model_version)
 
 
 if __name__=="__main__":

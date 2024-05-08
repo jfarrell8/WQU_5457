@@ -15,6 +15,8 @@ def yield_feature_selection():
 
 
 def main():
+    print('Combining multi-source datasets to create combined, final datasets for training...')
+
     config = load_config()
     start_date = config.get('MetaData', 'final_start_date')
 
@@ -60,10 +62,10 @@ def main():
     df_pivot.columns = ['_'.join(col) for col in df_pivot.columns]
     
     # send needed datasets to disk
-    dataset.to_csv('data/rl_dataset.csv')
+    dataset.to_csv('data/rl_dataset.csv', index=False)
     df_pivot.to_csv('data/final_dataset.csv')
 
-    print('\n\nDataset is ready for training!\n')
+    print('\n\nDatasets are ready for training!\n')
 
 
 if __name__=="__main__":

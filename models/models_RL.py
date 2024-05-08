@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from utils.utils import set_seeds, load_config, plot_wealth_index
-from models_v2 import PortfolioModelTrainer
+from models_NN import PortfolioModelTrainer
 import matplotlib.pyplot as plt
 import gym
 import datetime
@@ -119,11 +119,11 @@ class StockPortfolioEnv(gym.Env):
             df = pd.DataFrame(self.portfolio_return_memory)
             df.columns = ['monthly_return']
             plt.plot(df.monthly_return.cumsum(),'r')
-            plt.savefig("../data/RL/results/cumulative_reward.png")
+            plt.savefig(f"../data/RL/results/cumulative_reward.png")
             plt.close()
 
             plt.plot(self.portfolio_return_memory,'r')
-            plt.savefig("../data/RL/results/rewards.png")
+            plt.savefig(f"../data/RL/results/rewards.png")
             plt.close()
 
             print("=================================")
@@ -249,6 +249,9 @@ def main():
     # set seeds
     set_seeds(seed_state=42)
 
+    # create directories if needed
+    directory_creator()
+
     # set timestamp for the run
     timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
@@ -318,7 +321,7 @@ def main():
                 "transaction_cost_pct": 0.001,
                 "state_space": state_space,
                 "stock_dim": stock_dimension,
-                "tech_indicator_list": rl_train.columns[3:-2], ##### <- CHECK THIS
+                "tech_indicator_list": rl_train.columns[3:-2],
                 "action_space": stock_dimension,
                 "reward_scaling": 1e-4
     }
@@ -336,7 +339,7 @@ def main():
                                     tb_log_name='a2c',
                                     total_timesteps=5000)
     
-    trained_a2c.save("../data/RL/trained_models/trained_a2c.zip")
+    trained_a2c.save(f"../data/RL/trained_models/trained_a2c_{timestamp}.zip")
 
 
     # backtest RL
@@ -349,8 +352,10 @@ def main():
     e_trade_gym = StockPortfolioEnv(df = rl_test, **env_kwargs)
 
     df_monthly_return, df_actions = DRLAgent.DRL_prediction(model=trained_a2c, environment = e_trade_gym)
+    df_monthly_return.to_csv(f'../data/RL/results/df_monthly_{timestamp}.csv')
+    df_actions.to_csv(f'../data/RL/results/df_actions_{timestamp}.csv')
 
-    #
+    # get test prices for backtest
     test_prices = price_data[price_data.index.isin(test_date_index)]
     test_prices = test_prices.sort_index()
 
@@ -361,14 +366,13 @@ def main():
                                       param_grid=None,
                                       wts=df_actions)
     rl_metrics, rl_rets = portfolio.perform_backtest(test_prices)
-    rl_rets = rl_rets[0].replace(np.inf, np.nan).dropna()
 
     # save metrics and returns to disk
-    rl_metrics.to_csv(f'../data/model_data/rl_metrics_{timestamp}.csv')
-    rl_rets.to_csv(f'../data/model_data/rl_rets_{timestamp}.csv')
+    rl_metrics.to_csv(f'../data/RL/results/RL_metrics_test_{timestamp}.csv')
+    rl_rets.to_csv(f'../data/RL/results/RL_rets_test_{timestamp}.csv')
 
     # plot and save wealth index
-    plot_wealth_index(rl_rets, timestamp, initial_amount)
+    plot_wealth_index(rl_rets, timestamp, initial_amount, 'RL_test')
 
 
 
