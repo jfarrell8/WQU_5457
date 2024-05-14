@@ -15,7 +15,7 @@ import ast
 import sys
 
 class PortfolioModelTrainer:
-    def __init__(self, model_type, asset_num, input_shape, param_grid, wts=None):
+    def __init__(self, model_type, asset_num, input_shape, param_grid, timestamp, wts=None):
         self.model_type = model_type
         self.model = None
         self.asset_num = asset_num
@@ -24,13 +24,16 @@ class PortfolioModelTrainer:
         self.best_params = None
         self.best_score = np.inf
         self.wts = wts
+        self.timestamp = timestamp
 
     # custom loss function for gradient ascent Sharpe Ratio
-    def negative_sharpe_loss(self, wts, rets):
+    def negative_sharpe_loss(self, rets, wts):
         mean_return = tf.reduce_mean(tf.reduce_sum(wts * rets, axis=1))
         std_return = tf.math.reduce_std(tf.reduce_sum(wts * rets, axis=1))
-
-        return -mean_return / std_return
+        if std_return != 0.0:
+            return -mean_return / std_return
+        else:
+            return 0.0
 
     def build_model(self, params):
         self.model = Sequential()
@@ -78,9 +81,14 @@ class PortfolioModelTrainer:
 
         for i in range(0, df.shape[0] - n_train, n_val):
 
-            X_train, y_train = df.iloc[i : i + n_train, :-self.asset_num], df.iloc[i : i + n_train, -self.asset_num:]
-            X_val, y_val = df.iloc[i + n_train : i + n_train + n_val, :-self.asset_num], df.iloc[i + n_train : i + n_train + n_val, -self.asset_num:]
+            if params['window_type'] == 'fix':
+                X_train, y_train = df.iloc[i : i + n_train, :-self.asset_num], df.iloc[i : i + n_train, -self.asset_num:]
+                X_val, y_val = df.iloc[i + n_train : i + n_train + n_val, :-self.asset_num], df.iloc[i + n_train : i + n_train + n_val, -self.asset_num:]
 
+            elif params['window_type'] == 'exp':
+                X_train, y_train = df.iloc[: i + n_train, :-self.asset_num], df.iloc[: i + n_train, -self.asset_num:]
+                X_val, y_val = df.iloc[i + n_train : i + n_train + n_val, :-self.asset_num], df.iloc[i + n_train : i + n_train + n_val, -self.asset_num:]
+            
             # Define EarlyStopping callback
             early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
@@ -105,7 +113,7 @@ class PortfolioModelTrainer:
     def grid_search(self, n_train, n_val, df, batch):
        total_combos = len(ParameterGrid(self.param_grid))
 
-       for params in ParameterGrid(self.param_grid):
+       for idx, params in enumerate(ParameterGrid(self.param_grid)):
             print(f'Only {total_combos} left!!')
             print('Testing parameters: ', params)
             time.sleep(1)
@@ -116,7 +124,8 @@ class PortfolioModelTrainer:
                                                       n_val=n_val,
                                                       df=df,
                                                       batch=batch,
-                                                      params=params
+                                                      params=params,
+                                                      idx=idx
                                                 )
 
             if avg_score < self.best_score:
@@ -201,11 +210,11 @@ def main():
     # set seeds
     set_seeds(seed_state=42)
 
-    timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # load config to get params
     config = load_config()
-    trainval_split = float(config.get('NeuralNetParams', 'trainval_split'))
+    # trainval_split = float(config.get('NeuralNetParams', 'trainval_split'))
     asset_num = int(config.get('MetaData', 'ticker_num'))
     n_train = int(config.get('NeuralNetParams', 'n_train'))
     n_val = int(config.get('NeuralNetParams', 'n_val'))
@@ -218,8 +227,10 @@ def main():
     ticker_list = [i.split('ret_')[1] for i in df_pivot.columns[-asset_num:]]
 
     # let's establish train, validation, and test periods here:
-    trainval_date_index = df_pivot.index[:int(trainval_split*df_pivot.shape[0])]
-    test_date_index = df_pivot.index[int(trainval_split*df_pivot.shape[0]):]
+    # trainval_date_index = df_pivot.index[:int(trainval_split*df_pivot.shape[0])]
+    # test_date_index = df_pivot.index[int(trainval_split*df_pivot.shape[0]):]
+    trainval_date_index = df_pivot.index[:-n_val]
+    test_date_index = df_pivot.index[-n_val:]
 
     # load and prep price data for performance metric calcs later
     price_data = pd.read_csv('../data/price_data.csv', index_col='Date')
@@ -237,12 +248,18 @@ def main():
     df_pivot.reset_index(inplace=True, drop=True)
 
     # let's re-scale all of the data points
-    scaler = MinMaxScaler()
-    df_pivot_scaled = pd.DataFrame(scaler.fit_transform(df_pivot))
+    # scaler = MinMaxScaler()
+    # df_pivot_scaled = pd.DataFrame(scaler.fit_transform(df_pivot))
+    scaler = StandardScaler()
+    scaled_features = pd.DataFrame(scaler.fit_transform(df_pivot.iloc[:, :-61]))
+    unscaled_rets = df_pivot.iloc[:, -61:].reset_index(drop=True)
+    scaled_dataset = pd.concat([scaled_features, unscaled_rets], axis=1)
 
     # now set test dataset aside for post-training evaluation
-    df_trainval = df_pivot_scaled.iloc[:int(trainval_split*df_pivot.shape[0])]
-    df_test = df_pivot_scaled.iloc[int(trainval_split*df_pivot.shape[0]):]
+    # df_trainval = df_pivot_scaled.iloc[:int(trainval_split*df_pivot.shape[0])]
+    # df_test = df_pivot_scaled.iloc[int(trainval_split*df_pivot.shape[0]):]
+    df_trainval = scaled_dataset.iloc[:-n_val]
+    df_test = scaled_dataset.iloc[-n_val:]
     
     train_metrics = pd.DataFrame()
     test_metrics = pd.DataFrame()
@@ -268,8 +285,11 @@ def main():
         portfolio = PortfolioModelTrainer(model_type=model_type, 
                                           asset_num=asset_num,
                                           input_shape=input_shape, 
-                                          param_grid=param_grid)
+                                          param_grid=param_grid,
+                                          timestamp=timestamp)
         
+        batch = df_trainval.shape[0]
+
         # perform grid_search on the dataset
         portfolio.grid_search(n_train, n_val, df_trainval, batch)
 
@@ -321,7 +341,8 @@ def main():
         ew_portfolio = PortfolioModelTrainer(model_type='EW',
                                             asset_num=asset_num,
                                             input_shape=None,
-                                            param_grid=None)
+                                            param_grid=None,
+                                            timestamp=timestamp)
         # ew train performance
         ew_portfolio.build_benchmark(date_index, ticker_list)
         ew_metrics, ew_rets = ew_portfolio.perform_backtest(prices, initial_amount)

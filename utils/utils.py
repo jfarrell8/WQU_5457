@@ -24,6 +24,10 @@ def load_config():
     return config
 
 
+def setup_logger(config, filename):
+    pass
+
+
 def set_seeds(seed_state):
     np.random.seed(seed_state)
     random.seed(seed_state)

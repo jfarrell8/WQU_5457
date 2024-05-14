@@ -355,8 +355,8 @@ def main():
     e_trade_gym = StockPortfolioEnv(df = rl_test, **env_kwargs)
 
     df_monthly_return, df_actions = DRLAgent.DRL_prediction(model=trained_a2c, environment = e_trade_gym)
-    df_monthly_return.to_csv(f'../data/RL/results/df_monthly_{timestamp}.csv')
-    df_actions.to_csv(f'../data/RL/results/df_actions_{timestamp}.csv')
+    # df_monthly_return.to_csv(f'../data/RL/results/df_monthly_{timestamp}.csv')
+    # df_actions.to_csv(f'../data/RL/results/df_actions_{timestamp}.csv')
 
     # get test prices for backtest
     test_prices = price_data[price_data.index.isin(test_date_index)]
