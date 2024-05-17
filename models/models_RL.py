@@ -289,7 +289,7 @@ def main():
     # set timestamp for the run
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    agents = ['a2c', 'ppo', 'sac']
+    agents = ['a2c', 'ppo']
     
     # create directories if needed
     directory_creator(timestamp, agents)
@@ -432,7 +432,7 @@ def main():
                 best_score = sharpe_ratio
                 best_params = params
                 best_idx = idx
-        print(agent_name)
+        
         agent_best_params[agent_name] = [best_params, best_score, best_idx]
 
     train_metrics = pd.DataFrame()

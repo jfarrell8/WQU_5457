@@ -1,0 +1,129 @@
+begin_total_asset:1000
+end_total_asset:4738.575739634815
+Sharpe: 1.007284010480155
+begin_total_asset:1000
+end_total_asset:4764.143002413727
+Sharpe: 1.016240442049188
+begin_total_asset:1000
+end_total_asset:4902.456614923356
+Sharpe: 1.0150676627791104
+begin_total_asset:1000
+end_total_asset:4688.623739722666
+Sharpe: 1.0070121694965346
+begin_total_asset:1000
+end_total_asset:4902.701779891921
+Sharpe: 1.0322601539249128
+begin_total_asset:1000
+end_total_asset:4808.702531729002
+Sharpe: 1.0267195538439042
+begin_total_asset:1000
+end_total_asset:4634.08709126453
+Sharpe: 0.9883426653645433
+begin_total_asset:1000
+end_total_asset:4640.096654835471
+Sharpe: 0.995987110465395
+begin_total_asset:1000
+end_total_asset:4554.924646905142
+Sharpe: 0.9782482547844263
+begin_total_asset:1000
+end_total_asset:4676.393744763141
+Sharpe: 1.0072883142688356
+begin_total_asset:1000
+end_total_asset:4909.263261695917
+Sharpe: 1.0274280098150206
+begin_total_asset:1000
+end_total_asset:4934.2573003258185
+Sharpe: 1.038050386317111
+begin_total_asset:1000
+end_total_asset:4622.427810863835
+Sharpe: 0.9928843016700065
+begin_total_asset:1000
+end_total_asset:4486.125482867309
+Sharpe: 0.9796714410192007
+begin_total_asset:1000
+end_total_asset:4561.16992846566
+Sharpe: 0.9710777616197532
+begin_total_asset:1000
+end_total_asset:4864.624127135662
+Sharpe: 1.0248887035746048
+begin_total_asset:1000
+end_total_asset:4645.713383115548
+Sharpe: 0.9981162923463308
+begin_total_asset:1000
+end_total_asset:4553.7853019587
+Sharpe: 0.9790409472781857
+begin_total_asset:1000
+end_total_asset:5046.358029697475
+Sharpe: 1.0321534646679178
+begin_total_asset:1000
+end_total_asset:4939.101629335432
+Sharpe: 1.0289187866441474
+begin_total_asset:1000
+end_total_asset:4720.362970635794
+Sharpe: 1.004338845807076
+begin_total_asset:1000
+end_total_asset:5103.319369497328
+Sharpe: 1.0536417649150085
+begin_total_asset:1000
+end_total_asset:4816.527925353154
+Sharpe: 1.0189444103846477
+begin_total_asset:1000
+end_total_asset:4804.0355131112265
+Sharpe: 1.0132398798925812
+begin_total_asset:1000
+end_total_asset:4441.045762919804
+Sharpe: 0.9576475817483868
+begin_total_asset:1000
+end_total_asset:4680.2297638889895
+Sharpe: 1.007302884221427
+begin_total_asset:1000
+end_total_asset:4833.425636656941
+Sharpe: 1.0140580764490164
+begin_total_asset:1000
+end_total_asset:5033.971204247863
+Sharpe: 1.0464878080367952
+begin_total_asset:1000
+end_total_asset:5000.0282703659495
+Sharpe: 1.0406176815038177
+begin_total_asset:1000
+end_total_asset:4887.519721614542
+Sharpe: 1.0142196687951937
+begin_total_asset:1000
+end_total_asset:4737.29205333249
+Sharpe: 1.0046141130119217
+begin_total_asset:1000
+end_total_asset:4645.501765952386
+Sharpe: 0.9963550914404891
+begin_total_asset:1000
+end_total_asset:5094.929446920765
+Sharpe: 1.0457330016132498
+begin_total_asset:1000
+end_total_asset:4748.882261386312
+Sharpe: 1.0000044402457973
+begin_total_asset:1000
+end_total_asset:4462.186294285048
+Sharpe: 0.9712451859454022
+begin_total_asset:1000
+end_total_asset:4672.743315469461
+Sharpe: 0.9982054755768316
+begin_total_asset:1000
+end_total_asset:4780.803493234988
+Sharpe: 1.0158071226958112
+begin_total_asset:1000
+end_total_asset:4580.849615787009
+Sharpe: 0.9739091515727875
+begin_total_asset:1000
+end_total_asset:4622.302911529803
+Sharpe: 0.9883839476821333
+begin_total_asset:1000
+end_total_asset:4616.726992130747
+Sharpe: 0.9794770404542014
+begin_total_asset:1000
+end_total_asset:4963.308844350922
+Sharpe: 1.0242385196154993
+begin_total_asset:1000
+end_total_asset:4640.7423841676455
+Sharpe: 0.9837183455139453
+begin_total_asset:1000
+end_total_asset:998.982942245918
+Sharpe: 0.056477888709909586
