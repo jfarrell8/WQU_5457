@@ -1,0 +1,24 @@
+begin_total_asset:1000
+end_total_asset:4609.391668567657
+Sharpe: 0.9932775432468045
+begin_total_asset:1000
+end_total_asset:4484.00747408448
+Sharpe: 0.9796682964459715
+begin_total_asset:1000
+end_total_asset:4677.671474158212
+Sharpe: 1.002222572313116
+begin_total_asset:1000
+end_total_asset:4012.4365567135683
+Sharpe: 0.8994675502417158
+begin_total_asset:1000
+end_total_asset:4613.183789693115
+Sharpe: 1.000995483983419
+begin_total_asset:1000
+end_total_asset:4954.681084652798
+Sharpe: 1.0518405311112002
+begin_total_asset:1000
+end_total_asset:4769.308021867217
+Sharpe: 1.02784102304641
+begin_total_asset:1000
+end_total_asset:4593.761904373717
+Sharpe: 0.9937405285231425

@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
-from utils.utils import set_seeds, load_config, plot_wealth_index
+from utils.utils import set_seeds, load_config, config_dict_parser, plot_wealth_index
 from models_NN import PortfolioModelTrainer
 import matplotlib.pyplot as plt
 import gym
@@ -9,8 +9,11 @@ import datetime
 from gym.utils import seeding
 from gym import spaces
 from finrl.agents.stablebaselines3.models import DRLAgent
+from stable_baselines3 import A2C, DDPG, PPO, TD3, SAC
 from stable_baselines3.common.vec_env import DummyVecEnv
+from sklearn.model_selection import ParameterGrid
 import sys
+import torch
 
 
 class StockPortfolioEnv(gym.Env):
@@ -74,11 +77,14 @@ class StockPortfolioEnv(gym.Env):
                 action_space,
                 tech_indicator_list,
                 timestamp,
+                agent_name,
+                idx,
                 turbulence_threshold=None,
                 lookback=12,
                 day = 0):
         #super(StockEnv, self).__init__()
         #money = 10 , scope = 1
+        self.agent_name = agent_name
         self.day = day
         self.lookback=lookback
         self.df = df
@@ -91,6 +97,7 @@ class StockPortfolioEnv(gym.Env):
         self.action_space = action_space
         self.tech_indicator_list = tech_indicator_list
         self.timestamp = timestamp
+        self.idx = idx
 
         # action_space normalization and shape is self.stock_dim
         self.action_space = spaces.Box(low = 0, high = 1,shape = (self.action_space,))
@@ -121,11 +128,13 @@ class StockPortfolioEnv(gym.Env):
             df = pd.DataFrame(self.portfolio_return_memory)
             df.columns = ['monthly_return']
             plt.plot(df.monthly_return.cumsum(),'r')
-            plt.savefig(f"../data/RL/results/cumulative_reward_{self.timestamp}.png")
+            # plt.savefig(f"../data/RL/results/cumulative_reward_{self.timestamp}.png")
+            plt.savefig(f"../data/RL/{self.timestamp}/{self.agent_name}/results/cumulative_reward_{self.idx}.png")
             plt.close()
 
             plt.plot(self.portfolio_return_memory,'r')
-            plt.savefig(f"../data/RL/results/rewards_{self.timestamp}.png")
+            # plt.savefig(f"../data/RL/results/rewards_{self.timestamp}.png")
+            plt.savefig(f"../data/RL/{self.timestamp}/{self.agent_name}/results/rewards_{self.idx}.png")
             plt.close()
 
             print("=================================")
@@ -140,6 +149,14 @@ class StockPortfolioEnv(gym.Env):
               print("Sharpe: ",sharpe)
             print("=================================")
 
+            with open(f"../data/RL/{self.timestamp}/{self.agent_name}/results/performance_{self.idx}.txt", "a") as f:
+                f.write("begin_total_asset:{}".format(self.asset_memory[0]))
+                f.write("\n")
+                f.write("end_total_asset:{}".format(self.portfolio_value))
+                f.write("\n")
+                f.write(f"Sharpe: {sharpe}")
+                f.write("\n")
+
             return self.state, self.reward, self.terminal,{}
 
         else:
@@ -151,6 +168,9 @@ class StockPortfolioEnv(gym.Env):
             #else:
             #  norm_actions = actions
             weights = self.softmax_normalization(actions)
+            # wts_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            # np.savetxt(f"../data/RL/{self.timestamp}/{self.agent_name}/results/wts_{self.idx}_{wts_time}.csv", weights, delimiter=',')
+
             #print("Normalized actions: ", weights)
             self.actions_memory.append(weights)
             last_day_memory = self.data
@@ -164,9 +184,14 @@ class StockPortfolioEnv(gym.Env):
             # calculate portfolio return
             # individual stocks' return * weight
             portfolio_return = sum(((self.data.close.values / last_day_memory.close.values)-1)*weights)
+
             # update portfolio value
             new_portfolio_value = self.portfolio_value*(1+portfolio_return)
             self.portfolio_value = new_portfolio_value
+
+            # with open(f"../data/RL/{self.timestamp}/{self.agent_name}/results/portfolio_value{self.idx}.txt", "a") as f:
+            #     f.write(str(new_portfolio_value))
+            #     f.write('\n')
 
             # save into memory
             self.portfolio_return_memory.append(portfolio_return)
@@ -210,7 +235,7 @@ class StockPortfolioEnv(gym.Env):
     def save_asset_memory(self):
         date_list = self.date_memory
         portfolio_return = self.portfolio_return_memory
-        df_account_value = pd.DataFrame({'date':date_list,'daily_return':portfolio_return})
+        df_account_value = pd.DataFrame({'date':date_list,'monthly_return':portfolio_return})
         return df_account_value
 
     def save_action_memory(self):
@@ -221,7 +246,7 @@ class StockPortfolioEnv(gym.Env):
 
         action_list = self.actions_memory
         df_actions = pd.DataFrame(action_list)
-        df_actions.columns = self.data.tic.values
+        df_actions.columns = self.data.Ticker.values
         df_actions.index = df_date.Date
         return df_actions
 
@@ -234,28 +259,40 @@ class StockPortfolioEnv(gym.Env):
         obs = e.reset()
         return e, obs
 
+def directory_creator(timestamp, agents):
+    for agent in agents:
+        if not os.path.exists(f"../data/RL/{timestamp}/{agent}/datasets"):
+            os.makedirs(f"../data/RL/{timestamp}/{agent}/datasets")
+        if not os.path.exists(f"../data/RL/{timestamp}/{agent}/trained_models"):
+            os.makedirs(f"../data/RL/{timestamp}/{agent}/trained_models")
+        if not os.path.exists(f"../data/RL/{timestamp}/{agent}/tensorboard_log"):
+            os.makedirs(f"../data/RL/{timestamp}/{agent}/tensorboard_log")
+        if not os.path.exists(f"../data/RL/{timestamp}/{agent}/results"):
+            os.makedirs(f"../data/RL/{timestamp}/{agent}/results")
 
-def directory_creator():
-    if not os.path.exists("../data/RL/datasets"):
-        os.makedirs("../data/RL/datasets")
-    if not os.path.exists("../data/RL/trained_models"):
-        os.makedirs("../data/RL/trained_models")
-    if not os.path.exists("../data/RL/tensorboard_log"):
-        os.makedirs("../data/RL/tensorboard_log")
-    if not os.path.exists("../data/RL/results"):
-        os.makedirs("../data/RL/results")
 
+#Calculate the Sharpe ratio
+#This is our objective for tuning
+def calculate_sharpe(df):
+  if df['monthly_return'].std() !=0:
+    sharpe = (12**0.5)*df['monthly_return'].mean()/ \
+          df['monthly_return'].std()
+    return sharpe
+  else:
+    return 0
 
 
 def main():
     # set seeds
     set_seeds(seed_state=42)
-
-    # create directories if needed
-    directory_creator()
-
+    
     # set timestamp for the run
-    timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    agents = ['a2c', 'ppo', 'sac']
+    
+    # create directories if needed
+    directory_creator(timestamp, agents)
 
     # pull in the main dataset
     dataset = pd.read_csv('../data/rl_dataset.csv')
@@ -270,16 +307,24 @@ def main():
 
     # get some params
     config = load_config()
-    trainval_split = float(config.get('NeuralNetParams', 'trainval_split'))
+    # trainval_split = float(config.get('NeuralNetParams', 'trainval_split'))
+    n_val = int(config.get('NeuralNetParams', 'n_val'))
     initial_amount = int(config.get('MetaData', 'initial_amount'))
 
 
     rl_df = dataset
     rl_df.set_index('Date', inplace=True)
-    trainval_date_index = rl_df.index[:int(trainval_split*rl_df.shape[0])]
-    test_date_index = rl_df.index[int(trainval_split*rl_df.shape[0]):]
+    sorted_index = sorted(rl_df.index.unique())
+    # let's establish train, validation, and test periods here:
+    trainval_date_index = sorted_index[:-n_val]
+    test_date_index = sorted_index[-n_val:]
     rl_df.reset_index(inplace=True)
     rl_df.index = rl_df.Date.factorize()[0]
+
+    train_prices = price_data[price_data.index.isin(trainval_date_index)]
+    train_prices = train_prices.sort_index()
+    test_prices = price_data[price_data.index.isin(test_date_index)]
+    test_prices = test_prices.sort_index()
 
 
     # add covariance matrix as states
@@ -305,8 +350,8 @@ def main():
     rl_df = rl_df.sort_values(by=['Date', 'Ticker'])
 
     # train_pct = 0.8
-    unique_dates = sorted(rl_df.Date.unique())
-    train_end_date = unique_dates[int(trainval_split * len(unique_dates))]
+    # unique_dates = sorted(rl_df.Date.unique())
+    # train_end_date = unique_dates[int(trainval_split * len(unique_dates))]
 
     rl_train = rl_df.set_index('Date')
     # rl_train = rl_train.loc[:train_end_date, :]
@@ -314,68 +359,158 @@ def main():
     rl_train = rl_train.reset_index()
     rl_train.index = rl_train.Date.factorize()[0]
 
-    stock_dimension = len(rl_train.Ticker.unique())
-    state_space = stock_dimension
-
-    env_kwargs = {
-                "hmax": 100,
-                "initial_amount": initial_amount,
-                "transaction_cost_pct": 0.001,
-                "state_space": state_space,
-                "stock_dim": stock_dimension,
-                "tech_indicator_list": rl_train.columns[3:-2],
-                "action_space": stock_dimension,
-                "reward_scaling": 1e-4,
-                "timestamp": timestamp
-    }
-
-    e_train_gym = StockPortfolioEnv(df = rl_train, **env_kwargs)
-
-    env_train, _ = e_train_gym.get_sb_env()
-
-    agent = DRLAgent(env = env_train)
-
-    A2C_PARAMS = {"n_steps": 5, "ent_coef": 0.005, "learning_rate": 0.0002}
-    model_a2c = agent.get_model(model_name="a2c",model_kwargs = A2C_PARAMS)
-
-    trained_a2c = agent.train_model(model=model_a2c,
-                                    tb_log_name='a2c',
-                                    total_timesteps=5000)
-    
-    trained_a2c.save(f"../data/RL/trained_models/trained_a2c_{timestamp}.zip")
-
-
-    # backtest RL
     rl_test = rl_df.set_index('Date')
     rl_test = rl_test.loc[test_date_index[0]:, :]
     rl_test = rl_test.reset_index()
     rl_test.index = rl_test.Date.factorize()[0]
-    rl_test = rl_test.rename(columns={'Ticker':'tic'})
+    # rl_test = rl_test.rename(columns={'Ticker':'tic'})
 
-    e_trade_gym = StockPortfolioEnv(df = rl_test, **env_kwargs)
 
-    df_monthly_return, df_actions = DRLAgent.DRL_prediction(model=trained_a2c, environment = e_trade_gym)
-    # df_monthly_return.to_csv(f'../data/RL/results/df_monthly_{timestamp}.csv')
-    # df_actions.to_csv(f'../data/RL/results/df_actions_{timestamp}.csv')
+    stock_dimension = len(rl_train.Ticker.unique())
+    state_space = stock_dimension
 
-    # get test prices for backtest
-    test_prices = price_data[price_data.index.isin(test_date_index)]
-    test_prices = test_prices.sort_index()
+    agent_best_params = {}
 
-    # create portfolio object to perform backtest
-    portfolio = PortfolioModelTrainer(model_type='RL', 
-                                      asset_num=None,
-                                      input_shape=None,
-                                      param_grid=None,
-                                      wts=df_actions)
-    rl_metrics, rl_rets = portfolio.perform_backtest(test_prices, initial_amount)
+    for agent_name in agents:
+        print('#################')
+        print('#################')
+        print('#################')
+        print(agent_name.upper())
+        print('#################')
+        print('#################')
+        print('#################')
 
-    # save metrics and returns to disk
-    rl_metrics.to_csv(f'../data/RL/results/RL_metrics_test_{timestamp}.csv')
-    rl_rets.to_csv(f'../data/RL/results/RL_rets_test_{timestamp}.csv')
 
-    # plot and save wealth index
-    plot_wealth_index(rl_rets, initial_amount, timestamp, 'RL_test')
+        best_params = None
+        best_score = -np.inf
+        best_idx = None
+
+        param_grid = config_dict_parser(config, f'{agent_name}_param_grid')
+
+        for idx, params in enumerate(ParameterGrid(param_grid)):
+            env_kwargs = {
+                    "hmax": 100,
+                    "initial_amount": initial_amount,
+                    "transaction_cost_pct": 0.001,
+                    "state_space": state_space,
+                    "stock_dim": stock_dimension,
+                    "tech_indicator_list": rl_train.columns[3:-2],
+                    "action_space": stock_dimension,
+                    "reward_scaling": 1e-4,
+                    "timestamp": timestamp,
+                    "agent_name": agent_name,
+                    "idx": idx
+            }
+
+            e_train_gym = StockPortfolioEnv(df = rl_train, **env_kwargs)
+
+            env_train, _ = e_train_gym.get_sb_env()
+
+
+            agent = DRLAgent(env = env_train)
+
+            model = agent.get_model(model_name=agent_name, model_kwargs = params)
+
+            trained_model = agent.train_model(model=model,
+                                            tb_log_name=agent_name,
+                                            total_timesteps=5000)
+
+            # trained_model.save(f'../data/RL/{timestamp}/{agent_name}/trained_models/trained_{agent_name}_{idx}.zip')
+            trained_model.save(f'../data/RL/{timestamp}/{agent_name}/trained_models/trained_{agent_name}_{idx}.pth')
+
+            # make prediction on the test set to find Sharpe ratio
+            e_trade_gym = StockPortfolioEnv(df = rl_test, **env_kwargs)
+
+            df_monthly_return, df_actions = DRLAgent.DRL_prediction(model=trained_model, environment = e_trade_gym)
+
+            df_monthly_return.to_csv(f'../data/RL/{timestamp}/{agent_name}/results/{agent_name}_rets_{idx}.csv')
+            df_actions.to_csv(f'../data/RL/{timestamp}/{agent_name}/results/{agent_name}_wts_{idx}.csv')
+
+            sharpe_ratio = calculate_sharpe(df_monthly_return)
+            
+            if sharpe_ratio > best_score:
+                best_score = sharpe_ratio
+                best_params = params
+                best_idx = idx
+        print(agent_name)
+        agent_best_params[agent_name] = [best_params, best_score, best_idx]
+
+    train_metrics = pd.DataFrame()
+    train_rets = pd.DataFrame()
+    test_metrics = pd.DataFrame()
+    test_rets = pd.DataFrame()
+
+    for agent_name, values in agent_best_params.items():
+
+        with open(f'../data/RL/{timestamp}/best_params.txt', 'a') as f:
+            f.write(str(agent_name) + ': ' + str(values))
+            f.write('\n')
+
+
+        env_kwargs = {
+                    "hmax": 100,
+                    "initial_amount": initial_amount,
+                    "transaction_cost_pct": 0.001,
+                    "state_space": state_space,
+                    "stock_dim": stock_dimension,
+                    "tech_indicator_list": rl_train.columns[3:-2],
+                    "action_space": stock_dimension,
+                    "reward_scaling": 1e-4,
+                    "timestamp": timestamp,
+                    "agent_name": agent_name,
+                    "idx": idx
+            }
+
+        e_train_gym = StockPortfolioEnv(df = rl_train, **env_kwargs)
+
+        env_train, _ = e_train_gym.get_sb_env()
+
+
+        # agent = DRLAgent(env = env_train)
+
+        # model = agent.get_model(model_name=agent_name, model_kwargs = values[0])
+
+        ####### TEST IN-SAMPLE PERFORMANCE #######
+        tuned_model = eval(agent_name.upper()).load(f'../data/RL/{timestamp}/{agent_name}/trained_models/trained_{agent_name}_{values[2]}.pth', env=env_train)
+        train_returns, train_wts = DRLAgent.DRL_prediction(model=tuned_model, environment = e_train_gym)
+
+
+        ####### TEST OUT-OF-SAMPLE PERFORMANCE ########
+        test_wts = pd.read_csv(f'../data/RL/{timestamp}/{agent_name}/results/{agent_name}_wts_{values[2]}.csv', index_col='Date')
+        test_wts.index = pd.to_datetime(test_wts.index)
+
+        for model_version in ['train', 'test']:
+            if model_version == 'train':
+                wts = train_wts
+                prices = train_prices
+            elif model_version == 'test':
+                wts = test_wts
+                prices = test_prices
+            
+            portfolio = PortfolioModelTrainer(model_type=agent_name, 
+                                            asset_num=None,
+                                            input_shape=None,
+                                            param_grid=None,
+                                            timestamp=timestamp,
+                                            wts=wts)
+            rl_metrics, rl_rets = portfolio.perform_backtest(prices, initial_amount)
+
+            if model_version == 'train':
+                train_metrics = pd.concat([train_metrics, rl_metrics], axis=1)
+                train_rets = pd.concat([train_rets, rl_rets], axis=1)
+            elif model_version == 'test':
+                test_metrics = pd.concat([test_metrics, rl_metrics], axis=1)
+                test_rets = pd.concat([test_rets, rl_rets], axis=1)   
+
+    train_rets.to_csv(f'../data/RL/{timestamp}/train_rets.csv')
+    test_rets.to_csv(f'../data/RL/{timestamp}/test_rets.csv')
+    train_metrics.to_csv(f'../data/RL/{timestamp}/train_metrics.csv')
+    test_metrics.to_csv(f'../data/RL/{timestamp}/test_metrics.csv')
+    
+    plot_wealth_index(train_rets, initial_amount, timestamp, 'train', f'../data/RL/{timestamp}/')
+    plot_wealth_index(test_rets, initial_amount, timestamp, 'test', f'../data/RL/{timestamp}/')
+
+
 
 
 

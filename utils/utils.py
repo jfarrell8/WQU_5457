@@ -1,5 +1,6 @@
 import configparser
 import os
+import ast
 import pandas as pd
 import numpy as np
 import random
@@ -23,6 +24,18 @@ def load_config():
 
     return config
 
+def config_dict_parser(config, section_name):
+    section_dict = {}
+    for key, value in config[section_name].items():
+        try:
+            # Attempt to parse the value as a list
+            section_dict[key] = ast.literal_eval(value)
+        except (SyntaxError, ValueError):
+            # If parsing as a list fails, keep the value as a string
+            section_dict[key] = value
+
+    return section_dict
+
 
 def setup_logger(config, filename):
     pass
@@ -35,7 +48,7 @@ def set_seeds(seed_state):
 
 
 
-def plot_wealth_index(portfolio_returns, initial_amount, timestamp, model_version):
+def plot_wealth_index(portfolio_returns, initial_amount, timestamp, model_version, root_dir):
     # need to insert a row of 0s at the beginning so each line starts at the initial amount
     first_date = portfolio_returns.index[0]
     previous_month_end = first_date - relativedelta(months=1)
@@ -56,4 +69,4 @@ def plot_wealth_index(portfolio_returns, initial_amount, timestamp, model_versio
     plt.legend()
     plt.grid(True)
 
-    plt.savefig(f'../data/model_data/wealth_index_{model_version}_{timestamp}.png')
+    plt.savefig(os.path.join(root_dir, f'wealth_index_{model_version}_{timestamp}.png'))

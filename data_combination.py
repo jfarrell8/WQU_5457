@@ -7,11 +7,36 @@ from utils.utils import load_config
 
 
 
-def multicollinearity_search():
-    pass
+def yield_feature_selection(df, corr_threshold):
+    # get correlation matrix
+    corr_matrix = df.corr()
 
-def yield_feature_selection():
-    pass
+    # Set a threshold for correlation
+    threshold = corr_threshold
+
+    # Find index of features with high correlation
+    high_corr_idx = np.where(np.abs(corr_matrix) > threshold)
+
+    # Create a set to store the correlated features
+    correlated_features = set()
+
+    # Loop through the correlation matrix and add correlated pairs to the set
+    for i, j in zip(*high_corr_idx):
+        if i != j and i < j:
+            correlated_features.add((corr_matrix.index[i], corr_matrix.columns[j]))
+
+    # Drop one feature from each correlated pair
+    for feat1, feat2 in correlated_features:
+        try:
+            # Drop the feature with higher correlation coefficient
+            if corr_matrix.loc[feat1, :].mean() > corr_matrix.loc[feat2, :].mean():
+                df.drop(feat1, axis=1, inplace=True)
+            else:
+                df.drop(feat2, axis=1, inplace=True)
+        except:
+            pass
+
+    return df
 
 
 def main():
@@ -19,7 +44,7 @@ def main():
 
     config = load_config()
     start_date = config.get('MetaData', 'final_start_date')
-
+    # threshold = int(config.get('MetaData', 'corr_threshold'))
 
     # Download price data (.csv file)
     price_data = pd.read_csv('data/price_data.csv', index_col='Date')
@@ -32,15 +57,10 @@ def main():
     rets_m_long = rets_m_long.rename(columns={0: 'ret', 'level_1': 'Ticker'})
 
     # Download yield curves (.csv file)
-    yield_curve = pd.read_csv('data/interpolated_yield_curves.zip',
-        compression='zip',
-        index_col='Date'
-    )
-    # Fix redundant decimals on yield curve names
-    yield_curve.columns = [i/10 for i in range(0, 301)]
+    yield_curve = pd.read_csv('data/yield_curves.csv', index_col='Date')
     yield_curve.index = pd.to_datetime(yield_curve.index)
-    yield_curve = yield_curve[[1.0, 10.0, 20.0]]
-    yield_curve = yield_curve.rename(columns={1.0: '1 Yr', 10.0: '10 Yr', 20.0: '20 Yr'})
+    # yield_curve = yield_feature_selection(yield_curve, threshold)
+    yield_curve = yield_curve[['6 Mo', '30 Yr']]
     yield_m = yield_curve.resample('ME').last()
 
 

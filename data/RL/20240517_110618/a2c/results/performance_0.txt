@@ -1,0 +1,72 @@
+begin_total_asset:1000
+end_total_asset:4769.525486205169
+Sharpe: 0.996592143716298
+begin_total_asset:1000
+end_total_asset:4780.292284980471
+Sharpe: 1.0206927501360912
+begin_total_asset:1000
+end_total_asset:4924.647478484227
+Sharpe: 1.0345289070969146
+begin_total_asset:1000
+end_total_asset:4690.306533254498
+Sharpe: 0.991988556760807
+begin_total_asset:1000
+end_total_asset:4832.350334826976
+Sharpe: 1.0124401521926776
+begin_total_asset:1000
+end_total_asset:4741.267864428669
+Sharpe: 0.9989903939439846
+begin_total_asset:1000
+end_total_asset:5025.464282290446
+Sharpe: 1.0446794363663927
+begin_total_asset:1000
+end_total_asset:4948.725723095783
+Sharpe: 1.0236708684727254
+begin_total_asset:1000
+end_total_asset:4900.928511023024
+Sharpe: 1.005372370446526
+begin_total_asset:1000
+end_total_asset:4979.341302737886
+Sharpe: 1.01869155702402
+begin_total_asset:1000
+end_total_asset:4733.765946621341
+Sharpe: 0.9914596700156706
+begin_total_asset:1000
+end_total_asset:4957.336107340585
+Sharpe: 1.0097999591176277
+begin_total_asset:1000
+end_total_asset:4847.233192321033
+Sharpe: 1.0067274714202747
+begin_total_asset:1000
+end_total_asset:5121.466300157029
+Sharpe: 1.0388925708126309
+begin_total_asset:1000
+end_total_asset:4948.678235195773
+Sharpe: 1.0177893498884425
+begin_total_asset:1000
+end_total_asset:5116.358295323161
+Sharpe: 1.0326553312116389
+begin_total_asset:1000
+end_total_asset:5077.157954447416
+Sharpe: 1.0305626261454082
+begin_total_asset:1000
+end_total_asset:4983.298398851641
+Sharpe: 1.0402628594682939
+begin_total_asset:1000
+end_total_asset:5107.015368833439
+Sharpe: 1.0364286147192352
+begin_total_asset:1000
+end_total_asset:4950.725583323193
+Sharpe: 1.0259299571349259
+begin_total_asset:1000
+end_total_asset:5139.19196434161
+Sharpe: 1.0442601571773507
+begin_total_asset:1000
+end_total_asset:5208.86821189134
+Sharpe: 1.0552316775276642
+begin_total_asset:1000
+end_total_asset:4960.525954116605
+Sharpe: 1.0187261718899814
+begin_total_asset:1000
+end_total_asset:4970.152264618427
+Sharpe: 1.017391396769454

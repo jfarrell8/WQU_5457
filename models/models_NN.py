@@ -6,12 +6,11 @@ import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, SimpleRNN, Dense, Dropout
-from utils.utils import set_seeds, load_config, plot_wealth_index
-from sklearn.preprocessing import MinMaxScaler
+from utils.utils import set_seeds, load_config, config_dict_parser, plot_wealth_index
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import ParameterGrid
 import datetime
 import time
-import ast
 import sys
 
 class PortfolioModelTrainer:
