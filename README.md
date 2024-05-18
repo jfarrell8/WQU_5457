@@ -8,7 +8,9 @@ Repository for the Capstone Project of the Master of science in Financial Engine
 - Eliab Admasu
 
 Data Pre-processing
+
 _data_
+
 This folder contains intermediate and final datasets for our modeling processes. Additionally, it also contains example outputs for NN and RL runs.
 - final_dataset.csv is used for the neural network hyperparameter tuning jobs
 - rl_dataset.csv is used for the reinforcement learning tuning jobs
@@ -20,7 +22,8 @@ _data_wrangling_
 - price_data.py: Script to extract price data from YahooFinance for our universe
 - yield_curves.py: Script to download daily treasury rates from US Treasury and interpolate yields for analysis
 
-_data_combination.py_: Builds out the final_dataset.csv and rl_dataset.csv from the data_wrangling outputs. These datasets will be used to perform our modeling.
+_data_combination.py_
+- Builds out the final_dataset.csv and rl_dataset.csv from the data_wrangling outputs. These datasets will be used to perform our modeling.
 
 Modeling
 
@@ -38,5 +41,4 @@ _utils_
 - utils.py: utility functions use between both models_NN.py and models_RL.py
 
 _sup_notebooks_
-
-Contains supplementary notebooks used to extract and perform analysis on our datasets
+- Contains supplementary notebooks used to extract and perform analysis on our datasets
