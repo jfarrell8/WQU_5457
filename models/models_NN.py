@@ -12,6 +12,7 @@ from sklearn.model_selection import ParameterGrid
 import datetime
 import time
 import sys
+import os
 
 class PortfolioModelTrainer:
     def __init__(self, model_type, asset_num, input_shape, param_grid, timestamp, wts=None):
@@ -70,7 +71,6 @@ class PortfolioModelTrainer:
 
         self.model.compile(optimizer=optimizer_instance, loss=self.negative_sharpe_loss)
 
-        # return self.model
 
     def walk_forward_train(self, n_train, n_val, df, batch, params):
         n_splits = (df.shape[0] - n_train) // n_val + 1
@@ -112,7 +112,7 @@ class PortfolioModelTrainer:
     def grid_search(self, n_train, n_val, df, batch):
        total_combos = len(ParameterGrid(self.param_grid))
 
-       for idx, params in enumerate(ParameterGrid(self.param_grid)):
+       for params in ParameterGrid(self.param_grid):
             print(f'Only {total_combos} left!!')
             print('Testing parameters: ', params)
             time.sleep(1)
@@ -123,8 +123,7 @@ class PortfolioModelTrainer:
                                                       n_val=n_val,
                                                       df=df,
                                                       batch=batch,
-                                                      params=params,
-                                                      idx=idx
+                                                      params=params
                                                 )
 
             if avg_score < self.best_score:
@@ -155,9 +154,13 @@ class PortfolioModelTrainer:
     
     def save_model(self, timestamp, model_version):
 
-        self.model.save(f"../data/models/{self.model_type}_{timestamp}")
+        # if not os.path.exists(f"../data/models/{timestamp}/"):
+        #     os.makedirs(f"../data/models/{timestamp}/")
+        # if not os.path.exists(f"../data/model_data/{timestamp}/"):
+        #     os.makedirs(f"../data/model_data/{timestamp}/")
 
-        self.wts.to_csv(f"../data/model_data/{self.model_type}_{model_version}_{timestamp}_wts.csv")
+        self.model.save(f"../data/models/{timestamp}/{self.model_type}")
+        self.wts.to_csv(f"../data/model_data/{timestamp}/{self.model_type}/{self.model_type}_{model_version}_wts.csv")
 
     def build_benchmark(self, date_index, tickers):
         if self.model_type == 'EW':
@@ -165,8 +168,6 @@ class PortfolioModelTrainer:
             bench_wts[:] = 1 / len(bench_wts.columns)
 
         self.wts = bench_wts
-
-        # return bench_wts
     
     def perform_backtest(self, price_data, initial_amount):
 
@@ -191,18 +192,18 @@ class PortfolioModelTrainer:
 
         return p_metrics, p_rets
 
-def config_dict_parser(config, section_name):
-    section_dict = {}
-    for key, value in config[section_name].items():
-        try:
-            # Attempt to parse the value as a list
-            section_dict[key] = ast.literal_eval(value)
-        except (SyntaxError, ValueError):
-            # If parsing as a list fails, keep the value as a string
-            section_dict[key] = value
+def directory_creator(timestamp, neural_networks):
+    # if not os.path.exists(f"../data/model_data/{timestamp}/"):
+    #     os.makedirs(f"../data/model_data/{timestamp}/")
+    # if not os.path.exists(f"../data/models/{timestamp}/"):
+    #     os.makedirs(f"../data/models/{timestamp}/")
+    for nn_type in neural_networks:
+        if not os.path.exists(f"../data/models/{timestamp}/{nn_type}/"):
+            os.makedirs(f"../data/models/{timestamp}/{nn_type}/")
+        if not os.path.exists(f"../data/model_data/{timestamp}/{nn_type}/"):
+            os.makedirs(f"../data/model_data/{timestamp}/{nn_type}/")
 
-    return section_dict
-
+    
 
 def main():
 
@@ -210,10 +211,12 @@ def main():
     set_seeds(seed_state=42)
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    neural_networks = ['MLP', 'CNN', 'RNN']
+    # create directories
+    directory_creator(timestamp, neural_networks)
 
     # load config to get params
     config = load_config()
-    # trainval_split = float(config.get('NeuralNetParams', 'trainval_split'))
     asset_num = int(config.get('MetaData', 'ticker_num'))
     n_train = int(config.get('NeuralNetParams', 'n_train'))
     n_val = int(config.get('NeuralNetParams', 'n_val'))
@@ -226,8 +229,6 @@ def main():
     ticker_list = [i.split('ret_')[1] for i in df_pivot.columns[-asset_num:]]
 
     # let's establish train, validation, and test periods here:
-    # trainval_date_index = df_pivot.index[:int(trainval_split*df_pivot.shape[0])]
-    # test_date_index = df_pivot.index[int(trainval_split*df_pivot.shape[0]):]
     trainval_date_index = df_pivot.index[:-n_val]
     test_date_index = df_pivot.index[-n_val:]
 
@@ -247,16 +248,12 @@ def main():
     df_pivot.reset_index(inplace=True, drop=True)
 
     # let's re-scale all of the data points
-    # scaler = MinMaxScaler()
-    # df_pivot_scaled = pd.DataFrame(scaler.fit_transform(df_pivot))
     scaler = StandardScaler()
     scaled_features = pd.DataFrame(scaler.fit_transform(df_pivot.iloc[:, :-61]))
     unscaled_rets = df_pivot.iloc[:, -61:].reset_index(drop=True)
     scaled_dataset = pd.concat([scaled_features, unscaled_rets], axis=1)
 
     # now set test dataset aside for post-training evaluation
-    # df_trainval = df_pivot_scaled.iloc[:int(trainval_split*df_pivot.shape[0])]
-    # df_test = df_pivot_scaled.iloc[int(trainval_split*df_pivot.shape[0]):]
     df_trainval = scaled_dataset.iloc[:-n_val]
     df_test = scaled_dataset.iloc[-n_val:]
     
@@ -265,7 +262,7 @@ def main():
     train_rets = pd.DataFrame()
     test_rets = pd.DataFrame()
     
-    for model_type in ['MLP', 'CNN', 'RNN']:
+    for model_type in neural_networks:
         print(f'Training: {model_type}...')
 
         if model_type == 'MLP':
@@ -277,7 +274,6 @@ def main():
             X_train_reshaped = np.reshape(X_train_full.to_numpy(), (X_train_full.shape[0], X_train_full.shape[1], 1))
             input_shape = X_train_reshaped.shape[1:]
         
-        # param_grid = config.get('GridSearchParams', f'{model_type.lower()}_param_grid')
         param_grid = config_dict_parser(config, f'{model_type.lower()}_param_grid')
 
         # instantiate the portfolio object
@@ -293,6 +289,8 @@ def main():
         portfolio.grid_search(n_train, n_val, df_trainval, batch)
 
         print(f'Found best params for {model_type}!')
+        with open(f"../data/model_data/{timestamp}/{portfolio.model_type}/param_mapping.txt", "a") as f:
+            f.write(f'The best params for {portfolio.model_type} were: {str(portfolio.best_params)}\n')
         print(f'Training optimal model for {model_type}...')
 
         # train optimal
@@ -350,11 +348,11 @@ def main():
         rets = pd.concat([rets, ew_rets], axis=1)
 
         # save metrics and returns to disk
-        metrics.to_csv(f'../data/model_data/{model_version}_metrics_{timestamp}.csv')
-        rets.to_csv(f'../data/model_data/{model_version}_rets_{timestamp}.csv')
+        metrics.to_csv(f'../data/model_data/{timestamp}/NN_{model_version}_metrics.csv')
+        rets.to_csv(f'../data/model_data/{timestamp}/NN_{model_version}_rets.csv')
 
         # plot and save wealth index
-        plot_wealth_index(rets, initial_amount, timestamp, 'NN_' + model_version)
+        plot_wealth_index(rets, initial_amount, 'NN_' + model_version, f'../data/model_data/{timestamp}/')
 
 
 if __name__=="__main__":

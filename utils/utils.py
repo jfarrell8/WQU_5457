@@ -48,7 +48,7 @@ def set_seeds(seed_state):
 
 
 
-def plot_wealth_index(portfolio_returns, initial_amount, timestamp, model_version, root_dir):
+def plot_wealth_index(portfolio_returns, initial_amount, model_version, root_dir):
     # need to insert a row of 0s at the beginning so each line starts at the initial amount
     first_date = portfolio_returns.index[0]
     previous_month_end = first_date - relativedelta(months=1)
@@ -69,4 +69,4 @@ def plot_wealth_index(portfolio_returns, initial_amount, timestamp, model_versio
     plt.legend()
     plt.grid(True)
 
-    plt.savefig(os.path.join(root_dir, f'wealth_index_{model_version}_{timestamp}.png'))
+    plt.savefig(os.path.join(root_dir, f'wealth_index_{model_version}.png'))

@@ -1,0 +1,1 @@
+The best params for MLP were: {'activation': 'relu', 'dropout_rate': 0.1, 'epochs': 50, 'hidden_layer_sizes': 64, 'learning_rate': 0.001, 'num_hidden_layers': 2, 'optimizer': 'adam', 'window_type': 'fix'}

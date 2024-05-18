@@ -1,0 +1,1 @@
+The best params for CNN were: {'activation': 'relu', 'dense_units': 128, 'dropout_rate': 0.1, 'epochs': 50, 'filters': 64, 'kernel_size': 5, 'learning_rate': 0.001, 'optimizer': 'adam', 'window_type': 'fix'}

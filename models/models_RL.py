@@ -307,7 +307,6 @@ def main():
 
     # get some params
     config = load_config()
-    # trainval_split = float(config.get('NeuralNetParams', 'trainval_split'))
     n_val = int(config.get('NeuralNetParams', 'n_val'))
     initial_amount = int(config.get('MetaData', 'initial_amount'))
 
@@ -349,12 +348,8 @@ def main():
     rl_df = price_long.merge(rl_df, on=['Date', 'Ticker']).drop('ret', axis=1)
     rl_df = rl_df.sort_values(by=['Date', 'Ticker'])
 
-    # train_pct = 0.8
-    # unique_dates = sorted(rl_df.Date.unique())
-    # train_end_date = unique_dates[int(trainval_split * len(unique_dates))]
 
     rl_train = rl_df.set_index('Date')
-    # rl_train = rl_train.loc[:train_end_date, :]
     rl_train = rl_train.loc[:trainval_date_index[-1], :]
     rl_train = rl_train.reset_index()
     rl_train.index = rl_train.Date.factorize()[0]
@@ -363,7 +358,6 @@ def main():
     rl_test = rl_test.loc[test_date_index[0]:, :]
     rl_test = rl_test.reset_index()
     rl_test.index = rl_test.Date.factorize()[0]
-    # rl_test = rl_test.rename(columns={'Ticker':'tic'})
 
 
     stock_dimension = len(rl_train.Ticker.unique())
@@ -507,8 +501,8 @@ def main():
     train_metrics.to_csv(f'../data/RL/{timestamp}/train_metrics.csv')
     test_metrics.to_csv(f'../data/RL/{timestamp}/test_metrics.csv')
     
-    plot_wealth_index(train_rets, initial_amount, timestamp, 'train', f'../data/RL/{timestamp}/')
-    plot_wealth_index(test_rets, initial_amount, timestamp, 'test', f'../data/RL/{timestamp}/')
+    plot_wealth_index(train_rets, initial_amount, 'train', f'../data/RL/{timestamp}/')
+    plot_wealth_index(test_rets, initial_amount, 'test', f'../data/RL/{timestamp}/')
 
 
 
