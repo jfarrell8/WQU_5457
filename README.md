@@ -7,7 +7,7 @@ Repository for the Capstone Project of the Master of science in Financial Engine
 - John Farrell
 - Eliab Admasu
 
-Data Pre-processing
+### Data Pre-processing
 
 _data_
 
@@ -25,7 +25,7 @@ _data_wrangling_
 _data_combination.py_
 - Builds out the final_dataset.csv and rl_dataset.csv from the data_wrangling outputs. These datasets will be used to perform our modeling.
 
-Modeling
+### Modeling
 
 _models_
 - models_NN.py: Performs the hyperparameter tuning for MLP, CNN, and RNN neural nets to identify a portfolio weight distribution that maximizes portfolio Sharpe ratio
