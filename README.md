@@ -7,10 +7,14 @@ Repository for the Capstone Project of the Master of science in Financial Engine
 - John Farrell
 - Eliab Admasu
 
-### Instructions to Execute
+### Script Execution
 
-Perform the following actions to execute the portfolio optimization of neural networks and reinforcement learning for dividend aristocrat companies. Note, the config.ini file that is provided allows for adjustment of training and test windows as well as the hyperparameters used in building neural networks and deep learning agents.
+Perform the following actions to execute the portfolio optimization of neural networks and reinforcement learning for dividend aristocrat companies. A few notes first:
+1. The config.ini file that is provided allows for adjustment of training and test windows as well as the hyperparameters used in building neural networks and deep learning agents.
+2. We have pre-compiled the datasets for the end user. They can be found in the data folder: final_dataset.csv is used for the NN hyperparameter optimization, while rl_dataset.csv is used for the reinforcement learning HPO.
+3. We have scripts that detail the process as to how we obtained and transformed the data as needed. Further, there are notebooks that in the sup_notebooks folder that also detail from exploratory data analysis we went through to determine what data was available and how we could incorporate it.
 
+_Project execution instructions_
 1. pip install -r /path/to/local/repo/requirements.txt
 2. python models_NN.py
 3. python models_RL.py
