@@ -15,9 +15,11 @@ Perform the following actions to execute the portfolio optimization of neural ne
 3. We have scripts that detail the process as to how we obtained and transformed the data as needed. Further, there are notebooks that in the sup_notebooks folder that also detail from exploratory data analysis we went through to determine what data was available and how we could incorporate it.
 
 _Project execution instructions_
-1. pip install -r /path/to/local/repo/requirements.txt
-2. python models_NN.py
-3. python models_RL.py
+1. cd to repo path
+2. pip install -r /path/to/local/repo/requirements.txt
+3. cd to /models
+4. python models_NN.py
+5. python models_RL.py
 
 ### Data Pre-processing
 
