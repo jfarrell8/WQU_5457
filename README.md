@@ -7,6 +7,9 @@ Repository for the Capstone Project of the Master of science in Financial Engine
 - John Farrell
 - Eliab Admasu
 
+### Brief Introduction
+This work investigates the application of deep and reinforcement learning techniques to construct portfolios from the S&P 500 dividend aristocrat companies to maximize returns for value driven investors. By employing deep and reinforcement learning algorithms, we were able to construct portfolios of these companies using different dividend features, profitability ratios, and interest rates as predictors. Portfolios were built from MLPs, CNNs, RNNs, and assorted RL algorithms and were able to compete against mean-variance and equal-weighted portfolio benchmarks. 
+
 ### Script Execution
 
 Perform the following actions to execute the portfolio optimization of neural networks and reinforcement learning for dividend aristocrat companies. A few notes first:
