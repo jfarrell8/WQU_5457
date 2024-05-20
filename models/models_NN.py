@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+from cvxpy import Variable, Minimize, quad_form, Problem
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.models import Sequential
@@ -162,10 +163,33 @@ class PortfolioModelTrainer:
         self.model.save(f"../data/models/{timestamp}/{self.model_type}")
         self.wts.to_csv(f"../data/model_data/{timestamp}/{self.model_type}/{self.model_type}_{model_version}_wts.csv")
 
-    def build_benchmark(self, date_index, tickers):
+    def build_benchmark(self, date_index, tickers, rets_m=None, n_train=None):
         if self.model_type == 'EW':
             bench_wts = pd.DataFrame(index = date_index, columns = tickers)
             bench_wts[:] = 1 / len(bench_wts.columns)
+        elif self.model_type == 'MVO':
+            mvo_wts = pd.DataFrame()
+            for i in range(2, len(rets_m) - n_train + 1):
+                rets_exp = rets_m.iloc[i : i + n_train, :].mean()
+                rets_exp = rets_exp.values.reshape(1, -1)
+                rets_cov = rets_m.iloc[i : i + n_train, :].cov()
+
+                x = Variable(rets_m.shape[1])
+
+                # return and risk in proper matrix form
+                ret = rets_exp @ x
+                risk = quad_form(x, rets_cov)
+
+                # optimize with constraints (long-only and all weights sum to 1)
+                prob = Problem(Minimize(risk), [sum(x)==1, x >= 0])
+
+                prob.solve()
+
+                weights = pd.DataFrame([x.value], columns=rets_m.columns).round(4).T.rename(columns={0:rets_m.index[i + n_train-1]}).T
+
+                mvo_wts = pd.concat([mvo_wts, weights], axis=0)
+
+            bench_wts = mvo_wts[mvo_wts.index.isin(date_index)]
 
         self.wts = bench_wts
     
@@ -212,6 +236,7 @@ def main():
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     neural_networks = ['MLP', 'CNN', 'RNN']
+    
     # create directories
     directory_creator(timestamp, neural_networks)
 
@@ -344,8 +369,20 @@ def main():
         ew_portfolio.build_benchmark(date_index, ticker_list)
         ew_metrics, ew_rets = ew_portfolio.perform_backtest(prices, initial_amount)
 
-        metrics = pd.concat([metrics, ew_metrics], axis=1)
-        rets = pd.concat([rets, ew_rets], axis=1)
+        # get MVO portfolio performance
+        mvo_portfolio = PortfolioModelTrainer(model_type='MVO',
+                                            asset_num=asset_num,
+                                            input_shape=None,
+                                            param_grid=None,
+                                            timestamp=timestamp)
+        # ew train performance
+        rets_m = np.log(price_data).diff()
+        rets_m = rets_m.dropna()
+        mvo_portfolio.build_benchmark(date_index, ticker_list, rets_m=rets_m, n_train=n_train)
+        mvo_metrics, mvo_rets = mvo_portfolio.perform_backtest(prices, initial_amount)
+
+        metrics = pd.concat([metrics, ew_metrics, mvo_metrics], axis=1)
+        rets = pd.concat([rets, ew_rets, mvo_rets], axis=1)        
 
         # save metrics and returns to disk
         metrics.to_csv(f'../data/model_data/{timestamp}/NN_{model_version}_metrics.csv')
