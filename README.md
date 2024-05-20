@@ -7,6 +7,14 @@ Repository for the Capstone Project of the Master of science in Financial Engine
 - John Farrell
 - Eliab Admasu
 
+### Instructions to Execute
+
+Perform the following actions to execute the portfolio optimization of neural networks and reinforcement learning for dividend aristocrat companies. Note, the config.ini file that is provided allows for adjustment of training and test windows as well as the hyperparameters used in building neural networks and deep learning agents.
+
+1. pip install -r /path/to/local/repo/requirements.txt
+2. python models_NN.py
+3. python models_RL.py
+
 ### Data Pre-processing
 
 _data_
@@ -29,7 +37,7 @@ _data_combination.py_
 
 _models_
 - models_NN.py: Performs the hyperparameter tuning for MLP, CNN, and RNN neural nets to identify a portfolio weight distribution that maximizes portfolio Sharpe ratio
-- models.RL.py: Performs the hyperparameter tuning for A2C and PPO RL agents using FinRL backbone to also identify a portfolio weight distribution that maximizes portfolio Sharpe ratio
+- models_RL.py: Performs the hyperparameter tuning for A2C and PPO RL agents using FinRL backbone to also identify a portfolio weight distribution that maximizes portfolio Sharpe ratio
 
 _NN_HPO.ipynb_: Jupyter notebook that provides a hyperparameter tuning setting to capture the optimal weights for the S&P 500 dividend aristocrat portfolio using MLP, CNN, and RNN architectures.
 
